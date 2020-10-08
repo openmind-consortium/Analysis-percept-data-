@@ -1,4 +1,4 @@
-function perceive(files,subjectIDs,datafields)
+function perceive(dirname)
 % https://github.com/neuromodulation/perceive
 % v0.1 Contributors Wolf-Julian Neumann, Gerd Tinkhauser
 % This is an open research tool that is not intended for clinical purposes.
@@ -47,7 +47,7 @@ function perceive(files,subjectIDs,datafields)
 % ADD PATIENT SNAPSHOT EVENT READINGS
 % IMPROVE CHRONIC DIAGNOSTIC READINGS
 % ADD Lead DBS Integration for electrode location
-
+%{
 if ~exist('files','var') || isempty(files)
     try
         files=perceive_ffind('*.json');
@@ -63,7 +63,9 @@ if ~exist('files','var') || isempty(files)
         
     end
 end
+%}
 
+files = findFilesBVQX(dirname,'*.json');
 if ischar(files)
     files = {files};
 end
@@ -211,7 +213,7 @@ for a = 1:length(files)
                             end
                         end
                         xlabel('Frequency [Hz]')
-                        ylabel('Power spectral density [uV²/Hz]')
+                        ylabel('Power spectral density [uVÂ²/Hz]')
                         title({hdr.subject,strrep(char(hdr.SessionDate),'_',' '),'RIGHT'})
                         legend(strrep(channels(ir),'_',' '))
                         il = perceive_ci([hdr.chan '_L'],channels);
@@ -224,7 +226,7 @@ for a = 1:length(files)
                         title(strrep({'MostRecentSignalCheck',hdr.subject,char(hdr.SessionDate),'LEFT'},'_',' '))
                         plot(peaks(il,1),peaks(il,2),'LineStyle','none','Marker','.','MarkerSize',12)
                         xlabel('Frequency [Hz]')
-                        ylabel('Power spectral density [uV²/Hz]')
+                        ylabel('Power spectral density [uVÂ²/Hz]')
                         for c = 1:length(il)
                             if peaks(il(c),1)>0
                                 text(peaks(il(c),1),peaks(il(c),2),[' ' num2str(peaks(il(c),1),3) ' Hz'])
@@ -238,18 +240,47 @@ for a = 1:length(files)
                 case 'DiagnosticData'
                     
                     if isfield(data,'LFPTrendLogs')
-                        
+                        if isfield(data.LFPTrendLogs,'HemisphereLocationDef_Left')
                         data.left=data.LFPTrendLogs.HemisphereLocationDef_Left;
-                        data.right=data.LFPTrendLogs.HemisphereLocationDef_Right;
-                        
+                        end
+                        if isfield(data.LFPTrendLogs,'HemisphereLocationDef_Right')
+                            data.right=data.LFPTrendLogs.HemisphereLocationDef_Right;
+                        end
                         runs = fieldnames(data.left);
                         LFP=[];
                         STIM=[];
                         DT=[];
                         for c = 1:length(runs)
-                            ldata = data.left.(runs{c});
-                            rdata = data.right.(runs{c});
-                            LFP=[LFP;[[rdata(:).LFP];[ldata(:).LFP]]'];
+                            % put NaN's in ones side if it doesn't exist 
+                            % need better solution 
+                            if isfield(data,'left')
+                                runSamples = size([data.left.(runs{c}).LFP],2);
+                            elseif isfield(data,'right')
+                                runSamples = size([data.right.(runs{c}).LFP],2);
+                            end
+                            
+                            if isfield(data,'left')
+                                ldata = data.left.(runs{c});
+                            else
+                                % if left data doesn't exist copy meta data
+                                % from left and put NaN's in data
+                                ldata = data.right.(runs{c});
+                                for sss = 1:length(ldata)
+                                    ldata(sss).LFP = NaN;
+                                end
+                            end
+                             if isfield(data,'right')
+                                rdata = data.right.(runs{c});
+                             else
+                                % if right doesn't exist copy meta data
+                                % from left and put NaN's in data
+                                rdata = data.left.(runs{c});
+                                for sss = 1:length(rdata)
+                                    rdata(sss).LFP = NaN;
+                                end
+                            end
+                            
+                            LFP=[LFP;[ [rdata(:).LFP];[ldata(:).LFP]]' ];
                             STIM=[STIM;[[rdata(:).AmplitudeInMilliAmps];[ldata(:).AmplitudeInMilliAmps]]'];
                             DT = [DT datetime({ldata(:).DateTime},'InputFormat','yyyy-MM-dd''T''HH:mm:ss''Z''')];
                         end
@@ -330,7 +361,7 @@ for a = 1:length(files)
                                 legend(strrep(chanlabels{c},'_',' '))
                                 title({strrep(hdr.fname,'_',' ');char(DT(c));events{c};['STIM GROUP ' stimgroups{c}]})
                                 xlabel('Frequency [Hz]')
-                                ylabel('Power spectral density [uV²/Hz]')
+                                ylabel('Power spectral density [uVÂ²/Hz]')
                                 savefig(fullfile(hdr.fpath,[hdr.fname '_LFPSnapshot_' events{c} '-' num2str(c) '.fig']))
                                 perceive_print(fullfile(hdr.fpath,[hdr.fname '_LFPSnapshot_' events{c} '-' num2str(c)]))
                             else
@@ -578,7 +609,7 @@ for a = 1:length(files)
                         end
                     end
                     xlabel('Frequency [Hz]')
-                    ylabel('Power spectral density [uV²/Hz]')
+                    ylabel('Power spectral density [uVÂ²/Hz]')
                     title({hdr.subject,strrep(char(hdr.SessionDate),'_',' '),'RIGHT'})
                     legend(strrep(channels(ir),'_',' '))
                     il = perceive_ci([hdr.chan '_L'],channels);
@@ -591,7 +622,7 @@ for a = 1:length(files)
                     title(strrep({hdr.subject,char(hdr.SessionDate),'LEFT'},'_',' '))
                     plot(peaks(il,1),peaks(il,2),'LineStyle','none','Marker','.','MarkerSize',12)
                     xlabel('Frequency [Hz]')
-                    ylabel('Power spectral density [uV²/Hz]')
+                    ylabel('Power spectral density [uVÂ²/Hz]')
                     for c = 1:length(il)
                         if peaks(il(c),1)>0
                             text(peaks(il(c),1),peaks(il(c),2),[' ' num2str(peaks(il(c),1),3) ' Hz'])
@@ -894,6 +925,3 @@ for a = 1:length(files)
     
     hdr.DeviceInformation.Final.NeurostimulatorLocation
 end
-
-
-
