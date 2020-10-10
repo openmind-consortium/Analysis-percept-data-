@@ -7,14 +7,18 @@ timeline_extract=json_to_mat();
     %Improve graphics on Figures, labeling
     %Save figures produced to the created directory
 
-
+hem_label=[];
 %Will plot unilateral twice ('Right' and 'Left') if data is unilateral
 if ~isfield(timeline_extract.DiagnosticData.LFPTrendLogs,'HemisphereLocationDef_Right')
     timeline_extract.DiagnosticData.LFPTrendLogs.HemisphereLocationDef_Right=timeline_extract.DiagnosticData.LFPTrendLogs.HemisphereLocationDef_Left;
     fprintf('Only Left! ');
+    hem_label="Left";
 elseif ~isfield(timeline_extract.DiagnosticData.LFPTrendLogs,'HemisphereLocationDef_Left')
     timeline_extract.DiagnosticData.LFPTrendLogs.HemisphereLocationDef_Left=timeline_extract.DiagnosticData.LFPTrendLogs.HemisphereLocationDef_Right;
     fprintf('Only Right! ');
+    hem_label="Right";
+else
+    hem_label=[];
 end  
 left_timeline=timeline_extract.DiagnosticData.LFPTrendLogs.HemisphereLocationDef_Left
 right_timeline=timeline_extract.DiagnosticData.LFPTrendLogs.HemisphereLocationDef_Right
@@ -36,18 +40,26 @@ end
 figure
 
 subplot(2,1,1)
-scatter(DT,LFP(:,1),c,[1 0 0])
+scatter(DT,LFP(:,1),14,[1 0 0])
 ylim([0 300])
-title('Left')
+    if exist('hem_label')
+        title(hem_label)
+    else
+        title('Left')
+    end
 ylabel('LFP')
 xlabel('Date')
 
 
 
 subplot(2,1,2)
-scatter(DT,LFP(:,2),c,[1 0 1])
+scatter(DT,LFP(:,2),14,[1 0 1])
 ylim([0 5000])
-title('Right')
+    if exist('hem_label')
+        title(hem_label)
+    else
+        title('Right')
+    end
 ylabel('LFP')
 xlabel('Date')
 
@@ -65,18 +77,27 @@ for c = 1:length(runs)
         
                 subplot(2,1,1)
           
-                scatter(DT_day,LFP_day(:,1),c,[1 0 0])
+                scatter(DT_day,LFP_day(:,1),14,[1 0 0])
                 ylim([0 300])
-                title('Left')
+                    if exist('hem_label')
+                        title(hem_label)
+                    else
+                        title('Left')
+                    end
                 ylabel('LFP')
                 xlabel('Date')
              
 
                 subplot(2,1,2)
                
-                scatter(DT_day,LFP_day(:,2),c,[1 0 1])
+                scatter(DT_day,LFP_day(:,2),14,[1 0 1])
                 ylim([0 5000])
-                title('Right')
+                if exist('hem_label')
+                   title(hem_label)
+                else
+                   title('Right')
+                end
+                
                 ylabel('LFP')
                 xlabel('Date')
                 
